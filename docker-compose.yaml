@@ -1,0 +1,135 @@
+services:
+  service-layer:
+    build: .
+    image: service-layer:latest
+    container_name: service-layer
+    hostname: service-layer
+    depends_on:
+      - otel-collector
+    ports:
+      - "8080:8080"
+    networks:
+      - inst-java-apps-using-otel
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - OTEL_EXPERIMENTAL_SDK_ENABLED=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:5555
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_IMR_EXPORT_INTERVAL=1000
+      - OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED=true
+      - OTEL_INSTRUMENTATION_HTTP_CLIENT_EMIT_EXPERIMENTAL_TELEMETRY=true
+      - OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY=true
+      - OTEL_INSTRUMENTATION_JVM_METRICS_ENABLED=true
+      - OTEL_INSTRUMENTATION_PROCESS_METRICS_ENABLED=true
+      - OTEL_INSTRUMENTATION_RUNTIME_METRICS_ENABLED=true
+      - OTEL_INSTRUMENTATION_SYSTEM_METRICS_ENABLED=true
+      - OTEL_INSTRUMENTATION_TOMCAT_ENABLED=true
+      - OTEL_JAVAAGENT_DEBUG=true
+      - OTEL_JAVAAGENT_ENABLED=true
+      - OTEL_JAVAAGENT_INSTRUMENTATION_RUNTIME_METRICS_ENABLED=true
+      - OTEL_JAVAAGENT_LOGGING=application
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_LOG_LEVEL=trace
+      - OTEL_METRICS_EXPORTER=logging
+      - OTEL_METRIC_EXPORT_INTERVAL=1000
+      - OTEL_RESOURCE_ATTRIBUTES="job=job,application=omsvclyr-d,service.name=service-layer,service.version=1.0,deployment.environment=development"
+      - OTEL_RESOURCE_PROVIDERS_GCP_ENABLED=true
+      - OTEL_SDK_ENABLED=true
+      - OTEL_SERVICE_NAME=omsvclyr-d
+      - OTEL_TRACES_EXPORTER=none
+      - OTEL_TRACES_SAMPLER=always_on
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:8888/test/env
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    restart: always
+    container_name: otel-collector
+    hostname: otel-collector
+    depends_on:
+      tempo:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "5555:5555"
+      - "6666:6666"
+    networks:
+      - inst-java-apps-using-otel
+
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    container_name: tempo
+    hostname: tempo
+    volumes:
+      - ./o11y-backend/tempo-config.yaml:/etc/tempo.yaml
+      - ./o11y-backend/tempo-overrides.yaml:/etc/overrides.yaml
+      - ./tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - inst-java-apps-using-otel
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: wget --no-verbose --tries=1 --spider http://localhost:3200/status || exit 1
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./o11y-backend/prometheus.yaml:/etc/prometheus.yaml
+    ports:
+      - "9090:9090"
+    networks:
+      - inst-java-apps-using-otel
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: wget --no-verbose --tries=1 --spider http://localhost:9090/status || exit 1
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana 
+    depends_on:
+      tempo:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    volumes:
+      - ./o11y-backend/grafana-bootstrap.ini:/etc/grafana/grafana.ini
+      - ./o11y-backend/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_LOG_MODE=console file
+      - GF_LOG_LEVEL=info
+      - GF_PATHS_LOGS="/var/log/grafana"
+    ports:
+      - "3000:3000"
+    networks:
+      - inst-java-apps-using-otel
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+networks:
+  inst-java-apps-using-otel:
+    driver: bridge
+    name: inst-java-apps-using-otel
