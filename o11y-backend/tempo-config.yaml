@@ -1,5 +1,6 @@
 server:
   http_listen_port: 3200
+  log_level: debug
 
 distributor:
   ring:
@@ -34,13 +35,17 @@ compactor:
 # Metrics-generator configuration block
 metrics_generator:
   storage:
-    path: /tmp/tempo/metrics_generator_storage
+    path: /tmp/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
   registry:
     collection_interval: 15s
     external_labels:
       source: tempo
+      cluster: docker-compose
   traces_storage:
-    path: /tmp/tempo/traces_storage
+    path: /tmp/tempo/generator/traces
   # Processor-specific configuration
   processor:
     span_metrics:
@@ -69,7 +74,5 @@ storage:
 overrides:
   defaults:
     metrics_generator:
-      processors:
-        - "service-graphs"
-        - "span-metrics"
+      processors: [service-graphs, span-metrics]
   #per_tenant_override_config: /etc/tempo/overrides.yaml

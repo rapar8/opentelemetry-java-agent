@@ -10,6 +10,8 @@ datasources:
   basicAuth: false
   isDefault: false
   editable: true
+  jsonData:
+    httpMethod: GET
 - name: Tempo
   type: tempo
   uid: tempo
