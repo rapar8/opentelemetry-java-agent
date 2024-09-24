@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/o11y-backend/o11y-backend.iml" filepath="$PROJECT_DIR$/o11y-backend/o11y-backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/tempo-data/tempo-data.iml" filepath="$PROJECT_DIR$/tempo-data/tempo-data.iml" />
+    </modules>
+  </component>
+</project>

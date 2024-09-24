@@ -1,0 +1,60 @@
+event:
+  fom:
+    count: 3
+    type: "COLLECT_AT_STORE"
+  instrumentation:
+    spring-web:
+      enabled: true
+spring:
+  main:
+    banner-mode: off
+  cloud:
+    stream:
+      poller:
+        fixed-delay: 60000
+      binders:
+        solace-broker:
+          type: solace
+          environment:
+            solace:
+              java:
+                host: tcps://int-gke-us-ext-ing.messaging.solace.cloud:554
+                msgVpn: int-gke-euwe4
+                connectRetries: -1
+                reconnectRetries: -1
+                clientUsername: ordexe-sa-gke-nonprod
+                clientPassword: ${SOLACE_CLIENT_PASSWORD}
+                keepAliveIntervalInMillis: 60000
+  application:
+    name: service-layer-dev
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+    enable:
+      http:
+        client:
+          requests: true
+        server:
+          requests: true
+    tag:
+      http:
+        server:
+          requests:
+            status: true
+            uri: true
+    tags:
+      application: omsvclyr
+logging:
+  config: classpath:log4j-dev.xml
+solace:
+  health-check:
+    connection:
+      reconnect-attempts-until-down: 4

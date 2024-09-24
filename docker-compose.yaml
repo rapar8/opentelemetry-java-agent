@@ -1,6 +1,8 @@
 services:
   service-layer:
-    build: .
+    build:
+      context: ./order
+      target: "O2-8"
     image: service-layer:latest
     container_name: service-layer
     hostname: service-layer
@@ -10,39 +12,54 @@ services:
       - "8080:8080"
     networks:
       - inst-java-apps-using-otel
+    env_file: otel.env
     environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - OTEL_EXPERIMENTAL_SDK_ENABLED=true
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:5555
-      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta
-      - OTEL_INSTRUMENTATION_COMMON_EXPERIMENTAL_VIEW_TELEMETRY_ENABLED=true
-      - OTEL_IMR_EXPORT_INTERVAL=1000
-      - OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED=true
-      - OTEL_INSTRUMENTATION_HTTP_CLIENT_EMIT_EXPERIMENTAL_TELEMETRY=true
-      - OTEL_INSTRUMENTATION_HTTP_SERVER_EMIT_EXPERIMENTAL_TELEMETRY=true
-      - OTEL_INSTRUMENTATION_JVM_METRICS_ENABLED=true
-      - OTEL_INSTRUMENTATION_PROCESS_METRICS_ENABLED=true
-      - OTEL_INSTRUMENTATION_RUNTIME_METRICS_ENABLED=true
-      - OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_EMIT_EXPERIMENTAL_TELEMETRY=true
-      - OTEL_INSTRUMENTATION_SYSTEM_METRICS_ENABLED=true
-      - OTEL_INSTRUMENTATION_TOMCAT_ENABLED=true
-      - OTEL_JAVAAGENT_DEBUG=true
-      - OTEL_JAVAAGENT_ENABLED=true
-      - OTEL_JAVAAGENT_INSTRUMENTATION_RUNTIME_METRICS_ENABLED=true
-      - OTEL_JAVAAGENT_LOGGING=application
-      - OTEL_JMX_TARGET_SYSTEM=tomcat
-      - OTEL_LOGS_EXPORTER=none
-      - OTEL_LOG_LEVEL=trace
-      - OTEL_METRICS_EXPORTER=otlp
-      - OTEL_METRIC_EXPORT_INTERVAL=1000
-      - OTEL_PROPAGATORS=tracecontext
-      - OTEL_RESOURCE_ATTRIBUTES="job=job,application=omsvclyr-d,service.name=service-layer,service.version=1.0,deployment.environment=development"
-      - OTEL_RESOURCE_PROVIDERS_GCP_ENABLED=true
-      - OTEL_SDK_ENABLED=true
-      - OTEL_SERVICE_NAME=omsvclyr-d
-      - OTEL_TRACES_EXPORTER=none
-      - OTEL_TRACES_SAMPLER=always_on
+      - OTEL_RESOURCE_ATTRIBUTES="job=order,application=order,service.name=order,service.version=1.0,deployment.environment=development"
+      - SERVER_PORT=8080
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:8888/test/env
+
+  inventory:
+    build:
+      context: ./inventory
+      target: "O2-8"
+    image: inventory:latest
+    container_name: inventory
+    hostname: inventory
+    depends_on:
+      - otel-collector
+    ports:
+      - "8081:8081"
+    networks:
+      - inst-java-apps-using-otel
+    env_file: otel.env
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES="job=inventory,application=inventory,service.name=inventory,service.version=1.0,deployment.environment=development"
+      - SERVER_PORT=8081
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:8888/test/env
+
+  shipping:
+    build:
+      context: ./shipping
+      target: "O2-8"
+    image: shipping:latest
+    container_name: shipping
+    hostname: shipping
+    depends_on:
+      - otel-collector
+    ports:
+      - "8082:8082"
+    networks:
+      - inst-java-apps-using-otel
+    env_file: otel.env
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES="job=inventory,application=inventory,service.name=shipping,service.version=1.0,deployment.environment=development"
+      - SERVER_PORT=8082
     healthcheck:
       interval: 5s
       retries: 10
@@ -69,12 +86,12 @@ services:
 
   tempo:
     image: grafana/tempo:latest
-    command: [ "-config.file=/etc/tempo.yaml" ]
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
     container_name: tempo
     hostname: tempo
     volumes:
-      - ./o11y-backend/tempo-config.yaml:/etc/tempo.yaml
-      - ./o11y-backend/tempo-overrides.yaml:/etc/overrides.yaml
+      - ./o11y-backend/tempo-config.yaml:/etc/tempo/tempo.yaml
+      - ./o11y-backend/tempo-overrides.yaml:/etc/tempo/overrides.yaml
       - ./tempo-data:/tmp/tempo
     ports:
       - "3200:3200"
@@ -92,11 +109,11 @@ services:
     container_name: prometheus
     hostname: prometheus
     command:
-      - --config.file=/etc/prometheus.yaml
+      - --config.file=/etc/prometheus/prometheus.yaml
       - --web.enable-remote-write-receiver
       - --enable-feature=exemplar-storage
     volumes:
-      - ./o11y-backend/prometheus.yaml:/etc/prometheus.yaml
+      - ./o11y-backend/prometheus.yaml:/etc/prometheus/prometheus.yaml
     ports:
       - "9090:9090"
     networks:

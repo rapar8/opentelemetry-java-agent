@@ -2,6 +2,9 @@ server:
   http_listen_port: 3200
 
 distributor:
+  ring:
+    kvstore:
+      store: "inmemory"
   receivers:
     jaeger:
       protocols:
@@ -26,8 +29,28 @@ compactor:
     compaction_window: 1h
     max_block_bytes: 100_000_000
     block_retention: 1h
-    compacted_block_retention: 10m
+    compacted_block_retention: 24h
 
+# Metrics-generator configuration block
+metrics_generator:
+  storage:
+    path: /tmp/tempo/metrics_generator_storage
+  registry:
+    collection_interval: 15s
+    external_labels:
+      source: tempo
+  traces_storage:
+    path: /tmp/tempo/traces_storage
+  # Processor-specific configuration
+  processor:
+    span_metrics:
+      enable_target_info: true
+    service_graphs:
+      wait: 10
+      max_items: 10000
+      workers: 10
+      histogram_buckets: [ 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8 ]
+      enable_messaging_system_latency_histogram: true
 storage:
   trace:
     backend: local
@@ -44,4 +67,9 @@ storage:
       queue_depth: 10000
 
 overrides:
-  per_tenant_override_config: /etc/overrides.yaml
+  defaults:
+    metrics_generator:
+      processors:
+        - "service-graphs"
+        - "span-metrics"
+  #per_tenant_override_config: /etc/tempo/overrides.yaml
