@@ -48,7 +48,7 @@ public class TestController {
         try {
             thread(threadSize);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         return memDetails + ";" + id + ":" + name + runCommand();
     }
@@ -113,11 +113,11 @@ public class TestController {
                     try {
                         Thread.sleep(10000);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        logger.error(e);
                     }
                 }).start();
             } catch (Exception ex) {
-                ex.printStackTrace();
+                logger.error(ex);
                 System.out.println(i);
             }
         }

@@ -2,8 +2,7 @@ FROM maven:3.9.3-eclipse-temurin-17-alpine as shipping-build
 WORKDIR /shipping
 COPY . /shipping
 RUN mvn clean package -DskipTests --no-transfer-progress && rm -rf /shipping/.git
-RUN ls target
-RUN ls
+RUN pwd && ls -a && ls target
 
 FROM amazoncorretto:17 as O1-33
 

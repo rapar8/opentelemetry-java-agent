@@ -8,6 +8,7 @@ services:
     hostname: service-layer
     depends_on:
       - otel-collector
+      - loki
     ports:
       - "8080:8080"
     networks:
@@ -30,6 +31,8 @@ services:
     hostname: inventory
     depends_on:
       - otel-collector
+      - service-layer
+      - loki
     ports:
       - "8081:8081"
     networks:
@@ -52,6 +55,8 @@ services:
     hostname: shipping
     depends_on:
       - otel-collector
+      - inventory
+      - loki
     ports:
       - "8082:8082"
     networks:
@@ -74,6 +79,8 @@ services:
       tempo:
         condition: service_healthy
       prometheus:
+        condition: service_healthy
+      loki:
         condition: service_healthy
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
@@ -103,6 +110,22 @@ services:
       interval: 5s
       retries: 10
       test: wget --no-verbose --tries=1 --spider http://localhost:3200/status || exit 1
+
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: loki
+    hostname: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./o11y-backend/loki-config.yaml:/etc/loki/loki-config.yaml
+    networks:
+      - inst-java-apps-using-otel
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test: wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1
 
   prometheus:
     image: prom/prometheus:latest

@@ -1,9 +1,11 @@
 package com.ing.omsvclyr;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -21,10 +23,20 @@ import org.springframework.retry.support.RetryTemplate;
 @OpenAPIDefinition(info = @Info(title = "OM Service Layer API", description = "Async and Sync API Doc"))
 public class OmsvclyrCoreApplication {
 
+    static {
+        io.opentelemetry.instrumentation.oshi.SystemMetrics.registerObservers(GlobalOpenTelemetry.get());
+        io.opentelemetry.instrumentation.oshi.ProcessMetrics.registerObservers(GlobalOpenTelemetry.get());
+    }
+
     public static void main(String[] args) {
         SpringApplication.run(OmsvclyrCoreApplication.class, args);
     }
 
+    @Bean
+    public OpenTelemetrySdk openTelemetrySdk() {
+        // Obtain the OpenTelemetrySdk instance from the Java agent
+        return AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
+    }
 
     @Bean
     public GroupedOpenApi syncApi() { // group all APIs with `user` in the path

@@ -2,11 +2,9 @@ FROM maven:3.9.3-eclipse-temurin-17-alpine as inventory-build
 WORKDIR /inventory
 COPY . /inventory
 RUN mvn clean package -DskipTests --no-transfer-progress && rm -rf /inventory/.git
-RUN ls target
-RUN ls
+RUN pwd && ls -a && ls target
 
-
-FROM eclipse-temurin:17.0.12_7-jre-alpine as O1-33
+FROM amazoncorretto:17 as O1-33
 
 WORKDIR /inventory
 RUN apk --no-cache add curl

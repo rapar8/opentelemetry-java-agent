@@ -26,13 +26,17 @@ spring:
                 clientPassword: ${SOLACE_CLIENT_PASSWORD}
                 keepAliveIntervalInMillis: 60000
   application:
-    name: service-layer-dev
+    name: service-layer
+
 management:
   endpoints:
     web:
       exposure:
         include: "*"
   metrics:
+    export:
+      otlp:
+        enable: true
     distribution:
       percentiles-histogram:
         http:

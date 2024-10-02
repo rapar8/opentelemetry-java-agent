@@ -10,10 +10,7 @@ import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.BufferedReader;
@@ -145,11 +142,11 @@ public class TestController {
         return builder.toString();
     }
 
-    @GetMapping("order")
+    @GetMapping("order/{orderID}")
     @WithSpan("order-created")
-    public String order() {
+    public String order(@PathVariable("orderID") String orderNumber) {
 
-        Span.current().setAttribute("order.id", 143);
+        Span.current().setAttribute("order.id", orderNumber);
         WebClient client = WebClient.create("http://inventory:8081");
 
         return client.get()

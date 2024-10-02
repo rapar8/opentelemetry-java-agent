@@ -13,13 +13,6 @@
 
 <!--            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} tid=%mdc{trace_id} sid=%mdc{span_id} %X{trace_flags} %-5level %logger{36} - %msg%n"/>-->
         </OpenTelemetry>
-
-        <RollingFile name="RollingFile" fileName="${BASE_DIR}/otel/omlog.current.log" filePattern="${BASE_DIR}/otel/omlog-%d{yyyy-MM-dd}.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN} ${sys:PID} --- [%15.15t] %c : %m%n${sys:LOG_EXCEPTION_CONVERSION_WORD}" />
-            <Policies>
-                <TimeBasedTriggeringPolicy />
-            </Policies>
-        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -29,7 +22,6 @@
         <Root level="info">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="TelemetryAppender" level="info"/>
-            <AppenderRef ref="RollingFile"/>
         </Root>
 
         <!--Logger for org.apache.catalina package-->

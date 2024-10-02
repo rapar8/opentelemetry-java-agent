@@ -49,7 +49,7 @@ public class GcpTokenProvider {
                 logger.info("cURL:" + s);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         //TODO - END
 
