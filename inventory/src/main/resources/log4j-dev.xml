@@ -1,0 +1,37 @@
+<Configuration status="INFO">
+
+    <Appenders>
+        <!-- Console Appender for standard logging -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} tid=%mdc{trace_id} sid=%mdc{span_id} %X{trace_flags} %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- OpenTelemetry Appender %X{trace_id} span_id: %X{span_id} trace_flags: %X{trace_flags}-->
+        <OpenTelemetry name="TelemetryAppender"  captureMapMessageAttributes="true"
+                       captureMarkerAttribute="true"
+                       captureContextDataAttributes="*" captureExperimentalAttributes="true">
+
+<!--            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} tid=%mdc{trace_id} sid=%mdc{span_id} %X{trace_flags} %-5level %logger{36} - %msg%n"/>-->
+        </OpenTelemetry>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.springframework.cloud.stream.binder" level="warn"/>
+        <Logger name="org.springframework.context.annotation.AnnotationConfigApplicationContext" level="warn"/>
+
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TelemetryAppender" level="info"/>
+        </Root>
+
+        <!--Logger for org.apache.catalina package-->
+        <Logger name="io.opentelemetry" level="TRACE" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TelemetryAppender" level="debug"/>
+        </Logger>
+        <Logger name="io.opentelemetry.exporter.logging.LoggingMetricExporter" level="TRACE" additivity="false">
+            <AppenderRef ref="Console"/>
+	        <AppenderRef ref="TelemetryAppender" level="debug"/>
+        </Logger>
+    </Loggers>
+</Configuration>

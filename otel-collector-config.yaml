@@ -1,7 +1,12 @@
 receivers:
+  hostmetrics:
+    collection_interval: 5s
+    scrapers:
+      cpu:
+      memory:
   otlp:
     protocols:
-      grpc:
+      http:
         endpoint: otel-collector:5555
 
 processors:
@@ -12,24 +17,29 @@ processors:
 exporters:
   prometheus:
     endpoint: otel-collector:6666
-    namespace: default
   otlp:
     endpoint: tempo:4317
     tls:
       insecure: true
+  otlphttp:
+    endpoint: http://loki:3100/otlp
   logging:
-    loglevel: debug
+    verbosity: detailed
 
 service:
   pipelines:
     metrics:
-      receivers: [otlp]
+      receivers: [hostmetrics, otlp]
       processors: [batch]
-      exporters: [prometheus, logging]
+      exporters: [prometheus]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, logging]
+      exporters: [otlp]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp, logging]
   telemetry:
     logs:
       level: debug
